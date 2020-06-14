@@ -3,27 +3,87 @@ provider "aws" {
   region  = "ap-south-1"
 }
 
+resource "tls_private_key" "webserver_private_key" {
+ algorithm = "RSA"
+ rsa_bits = 4096
 
+}
+
+
+
+resource "local_file" "private_key" {
+
+ content = tls_private_key.webserver_private_key.private_key_pem
+
+ filename = "webserver_key.pem"
+
+ file_permission = 0400
+
+}
+
+resource "aws_key_pair" "webserver_key" {
+
+ key_name = "webserver"
+
+ public_key = tls_private_key.webserver_private_key.public_key_openssh
+
+}
+
+resource "aws_security_group" "allow_http_ssh" {
+
+  name        = "allow_http" 
+  description = "Allow http inbound traffic"
+  vpc_id      = "vpc-075e88e4d7296ca92"
+
+ingress {
+
+    description = "http"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  } 
+
+  ingress {
+
+    description = "ssh"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+
+   }
+
+   egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}  
 
 
 resource "aws_instance" "web" {
   ami           = "ami-0447a12f28fddb066"
   instance_type = "t2.micro"
-  key_name = "aws1"
-  security_groups = [ "web_server_sg" ]
+  key_name = aws_key_pair.webserver_key.key_name
+  security_groups = [aws_security_group.allow_http_ssh.name]
 
-connection {
-  type     = "ssh"
-  user     = "ec2-user"
-  private_key = file("I:/aman/key/aws1.pem")
-  host     = aws_instance.web.public_ip
-}
+
+
 provisioner "remote-exec" {
     inline = [
       "sudo yum install httpd  php git -y",
       "sudo systemctl restart httpd",
       "sudo systemctl enable httpd",
     ]
+
+    connection {
+  type     = "ssh"
+  user     = "ec2-user"
+  private_key = tls_private_key.webserver_private_key.private_key_pem
+  host     = aws_instance.web.public_ip
+}
   }
 
   tags = {
@@ -57,7 +117,8 @@ depends_on = [
   connection {
     type     = "ssh"
     user     = "ec2-user"
-    private_key = file("I:/aman/key/aws1.pem")
+    port    = 22
+    private_key = tls_private_key.webserver_private_key.private_key_pem
     host     = aws_instance.web.public_ip
   }
 
@@ -71,6 +132,29 @@ provisioner "remote-exec" {
   }
 }
 
+resource "aws_s3_bucket" "my_bucket" {
+  bucket = "webserver_images1234"
+  acl    = "public-read"
+}
+
+
+
+
+# Saving name of the bucket to local system
+resource "null_resource" "null2" {
+  depends_on = [
+      aws_s3_bucket.my_bucket,
+]
+  provisioner "local-exec" {
+    command = "echo ${aws_s3_bucket.my_bucket.bucket} > bucket_name.txt"
+  } 
+}
+
+resource "null_resource" "null" {
+  provisioner "local-exec" {
+    command = "git clone https://github.com/amantiwari1/amantiwari1.github.io.git"
+  } 
+}
 
 
 
@@ -79,3 +163,4 @@ output "myos_ip" {
 }
 
 
+  
