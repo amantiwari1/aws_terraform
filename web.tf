@@ -12,22 +12,20 @@ resource "tls_private_key" "webserver_private_key" {
 
 
 resource "local_file" "private_key" {
-
  content = tls_private_key.webserver_private_key.private_key_pem
-
  filename = "webserver_key.pem"
-
  file_permission = 0400
 
 }
 
+
 resource "aws_key_pair" "webserver_key" {
-
  key_name = "webserver"
-
  public_key = tls_private_key.webserver_private_key.public_key_openssh
 
 }
+
+
 
 resource "aws_security_group" "allow_http_ssh" {
 
@@ -36,7 +34,6 @@ resource "aws_security_group" "allow_http_ssh" {
   vpc_id      = "vpc-075e88e4d7296ca92"
 
 ingress {
-
     description = "http"
     from_port   = 80
     to_port     = 80
@@ -44,15 +41,15 @@ ingress {
     cidr_blocks = ["0.0.0.0/0"]
   } 
 
-  ingress {
 
+  ingress {
     description = "ssh"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-
    }
+
 
    egress {
     from_port   = 0
@@ -78,7 +75,7 @@ provisioner "remote-exec" {
       "sudo systemctl enable httpd",
     ]
 
-    connection {
+  connection {
   type     = "ssh"
   user     = "ec2-user"
   private_key = tls_private_key.webserver_private_key.private_key_pem
@@ -133,7 +130,7 @@ provisioner "remote-exec" {
 }
 
 resource "aws_s3_bucket" "my_bucket" {
-  bucket = "webserver_images1234"
+  bucket = "webserverimages1234"
   acl    = "public-read"
 }
 
@@ -155,6 +152,75 @@ resource "null_resource" "null" {
     command = "git clone https://github.com/amantiwari1/amantiwari1.github.io.git"
   } 
 }
+
+resource "aws_s3_bucket_object" "object1" {
+  depends_on =[
+      null_resource.null,
+      aws_s3_bucket.my_bucket
+]
+  bucket = aws_s3_bucket.my_bucket.bucket
+  key    = "bucket_image.jpg"
+  source = "I:/aman/terra/amantiwari1.github.io/assets/img/aman.png"
+  acl    = "public-read"
+} 
+
+resource "aws_cloudfront_distribution" "s3_distribution" { 
+  origin {
+    domain_name = aws_s3_bucket.my_bucket.bucket_regional_domain_name
+    origin_id   = aws_s3_bucket.my_bucket.bucket
+  }
+  enabled = true
+    default_cache_behavior {
+    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = aws_s3_bucket.my_bucket.bucket
+  forwarded_values {
+      query_string = false
+        cookies {
+        forward = "none"
+      }
+    }
+    viewer_protocol_policy = "allow-all"
+    min_ttl                = 0
+    default_ttl            = 3600
+    max_ttl                = 86400
+  }
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+}
+
+output "cloudfront"{
+  value = aws_cloudfront_distribution.s3_distribution.domain_name
+}
+
+// resource "null_resource" "nulll" {
+//   depends_on = [
+//       aws_cloudfront_distribution.s3_distribution,
+//       null_resource.null1,   
+// ]
+//   connection {
+//     type        = "ssh"
+//     user        = "ec2-user"
+//     private_key = tls_private_key.webserver_private_key.private_key_pem
+//     host        = aws_instance.web.public_ip
+//   }
+//   provisioner "remote-exec" {
+//       inline = [ 
+//         # sudo su << \"EOF\" \n echo \"<img src='${aws_cloudfront_distribution.s3_distribution.domain_name}'>\" >> /var/www/html/test1.php \n \"EOF\"
+//             "sudo su << EOF",
+//          "echo \"<img src='http://${aws_cloudfront_distribution.s3_distribution.domain_name}/${aws_s3_bucket_object.object1.key}'>\" >> /var/www/html/test1.php",
+//           "EOF"
+//      ]
+//   }
+
+// }
+
 
 
 
