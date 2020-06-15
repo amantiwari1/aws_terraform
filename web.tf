@@ -3,6 +3,9 @@ provider "aws" {
   region  = "ap-south-1"
 }
 
+
+// SSH RSA Generate 
+
 resource "tls_private_key" "webserver_private_key" {
  algorithm = "RSA"
  rsa_bits = 4096
@@ -10,6 +13,7 @@ resource "tls_private_key" "webserver_private_key" {
 }
 
 
+// Create the key pairs 
 
 resource "local_file" "private_key" {
  content = tls_private_key.webserver_private_key.private_key_pem
@@ -26,6 +30,7 @@ resource "aws_key_pair" "webserver_key" {
 }
 
 
+// Create Security Groups (Firewall) including http and SSH
 
 resource "aws_security_group" "allow_http_ssh" {
 
@@ -159,7 +164,7 @@ resource "aws_s3_bucket_object" "object1" {
       aws_s3_bucket.my_bucket
 ]
   bucket = aws_s3_bucket.my_bucket.bucket
-  key    = "bucket_image.jpg"
+  key    = "aman.png"
   source = "I:/aman/terra/amantiwari1.github.io/assets/img/aman.png"
   acl    = "public-read"
 } 
@@ -199,27 +204,27 @@ output "cloudfront"{
   value = aws_cloudfront_distribution.s3_distribution.domain_name
 }
 
-// resource "null_resource" "nulll" {
-//   depends_on = [
-//       aws_cloudfront_distribution.s3_distribution,
-//       null_resource.null1,   
-// ]
-//   connection {
-//     type        = "ssh"
-//     user        = "ec2-user"
-//     private_key = tls_private_key.webserver_private_key.private_key_pem
-//     host        = aws_instance.web.public_ip
-//   }
-//   provisioner "remote-exec" {
-//       inline = [ 
-//         # sudo su << \"EOF\" \n echo \"<img src='${aws_cloudfront_distribution.s3_distribution.domain_name}'>\" >> /var/www/html/test1.php \n \"EOF\"
-//             "sudo su << EOF",
-//          "echo \"<img src='http://${aws_cloudfront_distribution.s3_distribution.domain_name}/${aws_s3_bucket_object.object1.key}'>\" >> /var/www/html/test1.php",
-//           "EOF"
-//      ]
-//   }
+resource "null_resource" "nulll" {
+  depends_on = [
+      aws_cloudfront_distribution.s3_distribution,
+      null_resource.null,   
+]
+  connection {
+    type        = "ssh"
+    user        = "ec2-user"
+    private_key = tls_private_key.webserver_private_key.private_key_pem
+    host        = aws_instance.web.public_ip
+  }
+  provisioner "remote-exec" {
+      inline = [ 
+        # sudo su << \"EOF\" \n echo \"<img src='${aws_cloudfront_distribution.s3_distribution.domain_name}'>\" >> /var/www/html/index.html \n \"EOF\"
+            "sudo su << EOF",
+         "echo \"<img src='http://${aws_cloudfront_distribution.s3_distribution.domain_name}/${aws_s3_bucket_object.object1.key}'>\" >> /var/www/html/index.html",
+          "EOF"
+     ]
+  }
 
-// }
+}
 
 
 
