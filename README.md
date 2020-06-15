@@ -2,6 +2,8 @@
 
 ## 	Starting The Website in aws and terraform 
 
+![Create repository](images/ShooterScreenshot-0-15-06-20.png)
+
 ### First create  terraform file
 ```
 touch web.tf 
