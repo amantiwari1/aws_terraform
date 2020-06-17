@@ -26,13 +26,13 @@ resource "tls_private_key" "webserver_private_key" {
 ```
 
 
-download package aws, null and tls using file 
+### download package aws, null and tls using file 
 
 ```
 terraform init
 ```
 
-Create Key pair
+### Create Key pair
 ```
 
 resource "local_file" "private_key" {
@@ -86,8 +86,8 @@ ingress {
 }  
 ```
 
-Now,
-Create EC2 ( Web Server ) with key pairs and security groups and install git, httpd,  
+### Now,
+### Create EC2 ( Web Server ) with key pairs and security groups and install git, httpd,  
 ```
 resource "aws_instance" "web" {
   ami           = "ami-0447a12f28fddb066"
@@ -120,7 +120,7 @@ provisioner "remote-exec" {
 
 ```
 
-Create the EBS Volume 
+### Create the EBS Volume 
 ```
 resource "aws_ebs_volume" "esb1" {
   availability_zone = aws_instance.web.availability_zone
@@ -131,7 +131,7 @@ resource "aws_ebs_volume" "esb1" {
 }
 ```
 
-EBS attach into EC2 Which I Created Pervious!!
+### EBS attach into EC2 Which I Created Pervious!!
 ```
 resource "aws_volume_attachment" "ebs_att" {
   device_name = "/dev/sdh"
@@ -140,7 +140,7 @@ resource "aws_volume_attachment" "ebs_att" {
   force_detach = true
 }
 ```
-Mount and copy website file to EBS Volumne
+### Mount and copy website file to EBS Volumne
 
 ```
 resource "null_resource" "nullremote3"  {
@@ -169,7 +169,7 @@ provisioner "remote-exec" {
 }
 ```
 
-Create the S3 Budget
+### Create the S3 Budget
 ```
 resource "aws_s3_bucket" "my_bucket" {
   bucket = "webserverimages1234"
@@ -177,7 +177,7 @@ resource "aws_s3_bucket" "my_bucket" {
 }
 ```
 
-Download website file usig github code and upload the that file to S3 Budget
+### Download website file usig github code and upload the that file to S3 Budget
 ```
 resource "null_resource" "null2" {
   depends_on = [
@@ -206,7 +206,7 @@ resource "aws_s3_bucket_object" "object1" {
 } 
 ```
 
-Create the CloudFront Distribution
+### Create the CloudFront Distribution
 ```
 resource "aws_cloudfront_distribution" "s3_distribution" { 
   origin {
@@ -240,7 +240,7 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
 }
 ```
 
-Attach image in S3 Budget to CloudFront and Add url to Website file
+### Attach image in S3 Budget to CloudFront and Add url to Website file
 ```
 resource "null_resource" "nulll" {
   depends_on = [
@@ -264,7 +264,7 @@ resource "null_resource" "nulll" {
 
 }
 ```
-All Output 
+### All Output 
 ```
 output "cloudfront"{
   value = aws_cloudfront_distribution.s3_distribution.domain_name
@@ -277,14 +277,14 @@ output "myos_ip" {
 
 ```
 
-After Save the file web.tf
+### After Save the file web.tf
 
-Open CMD
+### Open CMD
 
 ```
 cd I:\aman\terra
 ```
-then Run it
+### then Run it
 ```
 terraform apply
 ```
