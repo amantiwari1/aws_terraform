@@ -50,7 +50,7 @@ resource "aws_key_pair" "webserver_key" {
 }
 ```
 
-Create Security Groups (Firewall) including http and SSH
+### Create Security Groups (Firewall) including http and SSH
 ```
 
 resource "aws_security_group" "allow_http_ssh" {
